@@ -127,8 +127,10 @@ const App: React.FC = () => {
                 const savedState = JSON.parse(savedStateJSON);
                 
                 // Migrate legacy model settings
-                if (typeof savedState.selectedModel === 'string' && (savedState.selectedModel.includes('flash-lite') || savedState.selectedModel.includes('3.5'))) {
-                    savedState.selectedModel = 'gemini-2.5-flash';
+                if (savedState.selectedModel === 'gemini-2.5-pro' || savedState.selectedModel === 'gemini-2.5-flash') {
+                    savedState.selectedModel = 'gemini-3.1-pro-preview';
+                } else if (savedState.selectedModel === 'gemini-3.1-flash-lite-preview') {
+                    savedState.selectedModel = 'gemini-3.5-flash-lite';
                 }
                 
                 const currentLangOptions = translations[language].options;

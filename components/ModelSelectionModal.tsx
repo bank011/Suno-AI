@@ -63,21 +63,21 @@ const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
             </p>
           </button>
 
-          {/* Gemini 2.5 Flash */}
+          {/* Gemini 3.5 Flash Lite */}
           <button
-            onClick={() => setSelected('gemini-2.5-flash')}
+            onClick={() => setSelected('gemini-3.5-flash-lite')}
             className={`w-full text-left p-4 rounded-xl border transition-all ${
-              selected === 'gemini-2.5-flash'
+              selected === 'gemini-3.5-flash-lite'
                 ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/50'
                 : 'bg-zinc-800/50 border-zinc-700/50 hover:bg-zinc-800 hover:border-zinc-600'
             }`}
           >
             <div className="flex justify-between items-start mb-1">
               <div className="flex items-center gap-2">
-                <Zap className={`w-5 h-5 ${selected === 'gemini-2.5-flash' ? 'text-emerald-400' : 'text-zinc-400'}`} />
-                <span className="font-medium text-white">Gemini 2.5 Flash</span>
+                <Zap className={`w-5 h-5 ${selected === 'gemini-3.5-flash-lite' ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <span className="font-medium text-white">Gemini 3.5 Flash Lite</span>
               </div>
-              {selected === 'gemini-2.5-flash' && (
+              {selected === 'gemini-3.5-flash-lite' && (
                 <Check className="w-5 h-5 text-emerald-400" />
               )}
             </div>

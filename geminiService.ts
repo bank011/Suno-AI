@@ -2,7 +2,6 @@
 import { GoogleGenAI, Type, Modality, GenerateContentResponse } from "@google/genai";
 import { type Language, translations } from "./translations";
 import { selectSmartVocabulary, type SmartVocabularyResult, CATEGORIZED_VOCABULARY } from "./vocabularyEngine";
-import { classifyGeminiError } from "./apiKeyVerifier";
 
 export { selectSmartVocabulary, CATEGORIZED_VOCABULARY };
 export type { SmartVocabularyResult };
@@ -282,25 +281,34 @@ const handleGeminiError = (error: unknown, language: Language): Error => {
         return error;
     }
 
-    const classified = classifyGeminiError(error);
+    const errObj = error as any;
+    const status = errObj?.status || errObj?.code || errObj?.error?.code || errObj?.error?.status;
+    const message = (errObj?.message || errObj?.error?.message || String(error)).toLowerCase();
 
-    if (classified === "API Key ไม่ถูกต้อง") {
-        return new AuthError(classified);
+    // 401 Unauthorized
+    if (status === 401 || status === 'UNAUTHENTICATED' || message.includes('401') || message.includes('unauthenticated') || message.includes('api key not valid') || message.includes('invalid api key')) {
+        return new AuthError(language === 'th' ? 'API Key ไม่ถูกต้อง หรือสิทธิ์ลงชื่อเข้าใช้ไม่สมบูรณ์ (401 Unauthorized)' : 'Invalid API Key or unauthorized request (401 Unauthorized)');
     }
-    if (classified === "API Key ไม่มีสิทธิ์ / API ถูกจำกัด") {
-        return new PermissionError(classified);
+
+    // 403 Forbidden - Permission / Project / API Access issue (Not claiming invalid key)
+    if (status === 403 || status === 'PERMISSION_DENIED' || message.includes('403') || message.includes('permission_denied') || message.includes('permission denied') || message.includes('project')) {
+        return new PermissionError(language === 'th' ? 'ไม่มีสิทธิ์เข้าถึงโมเดล หรือโปรเจกต์ยังไม่ได้เปิดใช้งาน Gemini API Access (403 Forbidden)' : 'Access denied. Please check your Google Cloud project permissions and Gemini API configuration (403 Forbidden)');
     }
-    if (classified === "Model ไม่พบ") {
-        return new NotFoundError(classified);
+
+    // 404 Not Found
+    if (status === 404 || status === 'NOT_FOUND' || message.includes('404') || message.includes('not_found') || message.includes('model not found')) {
+        return new NotFoundError(language === 'th' ? 'ไม่พบโมเดล AI ที่ระบุ หรือทรัพยากรไม่ถูกต้อง (404 Not Found)' : 'Requested AI model or resource not found (404 Not Found)');
     }
-    if (classified === "Quota/Credit หมด" || classified === "Quota หรือ Rate Limit") {
-        return new RateLimitError(classified);
+
+    // 429 Too Many Requests / Rate Limit
+    if (status === 429 || status === 'RESOURCE_EXHAUSTED' || message.includes('429') || message.includes('resource_exhausted') || message.includes('quota')) {
+        return new RateLimitError(t.errorRateLimit || (language === 'th' ? 'การใช้งานเกินโควต้า กรุณารอสักครู่ (429 Too Many Requests)' : 'Rate limit exceeded, please wait a moment (429 Too Many Requests)'));
     }
 
     if (error instanceof Error) {
         return error;
     }
-    return new Error(classified || t.errorUnknown || 'An unknown error occurred');
+    return new Error(t.errorUnknown || 'An unknown error occurred');
 };
 
 export async function generateSong(params: any, apiKey: string): Promise<string> {
@@ -395,7 +403,7 @@ export async function generateRandomIdea(language: Language, apiKey: string): Pr
     const ai = new GoogleGenAI({ apiKey });
     try {
         const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.5-flash-lite',
             contents: `Generate a song idea in ${translations[language].languageName} about a realistic contemporary situation in today's world. No fantasy. No fairy tales. No novels. Just raw modern life. Max 2 sentences.`,
         }));
         return response.text?.trim() || '';
@@ -408,7 +416,7 @@ export async function generateRandomNarrative(language: Language, apiKey: string
     const ai = new GoogleGenAI({ apiKey });
     try {
         const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.5-flash-lite',
             contents: `Generate a random, deep song narrative concept. 
             Language: ${translations[language].languageName}.
             STRICT RULE: Focus on REALISM, MODERN LIFE, and CURRENT WORLD TRENDS. Avoid fantasy or novelistic tones. 
@@ -437,7 +445,7 @@ export async function generateNarrativeFromIdea(language: Language, idea: string
     const ai = new GoogleGenAI({ apiKey });
     try {
         const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.5-flash-lite',
             contents: `Expand this song idea into a modern and realistic narrative concept: "${idea}". 
             Language: ${translations[language].languageName}.
             IMPORTANT: Use contemporary settings and relatable real-world conflicts. Strictly avoid novel-style or fantasy storytelling.
@@ -469,7 +477,7 @@ export async function generateSongStructure(inputs: any, language: Language, api
         const moods = inputs.selectedMood?.join(', ') || '';
         
         const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.5-flash-lite',
             contents: `Act as a professional music producer. Create a detailed song structure for a song with the following style:
             
             Genre: ${genres}
@@ -504,7 +512,7 @@ export async function generateStyleFromIdea(inputs: any, language: Language, api
     const ai = new GoogleGenAI({ apiKey });
     try {
         const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.5-flash-lite',
             contents: `Analyze this song idea and suggest style parameters: "${inputs.prompt}".
             Language: ${translations[language].languageName}.
             Return JSON.`,
@@ -532,7 +540,7 @@ export async function generateStyleFromArtist(artist: string, language: Language
     const ai = new GoogleGenAI({ apiKey });
     try {
         const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.5-flash-lite',
             contents: `Analyze the musical style of "${artist}" and suggest parameters.
             Language: ${translations[language].languageName}.
             Return JSON.`,

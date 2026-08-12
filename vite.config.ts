@@ -18,8 +18,6 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0',
-    port: 3000,
-    strictPort: true,
+    host: true, // Expose to network for testing on mobile
   }
 });

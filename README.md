@@ -43,7 +43,7 @@
 ## 🛠️ เทคโนโลยีที่ใช้
 
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS
-- **AI Model:** Google Gemini API (`gemini-3.1-pro-preview`, `gemini-2.5-flash`, `gemini-3.6-flash`)
+- **AI Model:** Google Gemini API (`gemini-3.1-pro-preview`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`)
 
 ---
 
